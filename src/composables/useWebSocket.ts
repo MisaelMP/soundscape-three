@@ -1,138 +1,107 @@
-import { ref, onMounted, onUnmounted } from 'vue';
-import type { Ref } from 'vue';
-
-interface WebSocketMessage {
-	type: 'user_joined' | 'user_left' | 'init' | 'update' | 'ping' | 'pong';
-	userId: string;
-	timestamp: number;
-	particles?: Array<{
-		position: [number, number, number];
-		rotation: number;
-		scale: number;
-		velocity: [number, number, number];
-	}>;
-	color?: number;
-}
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'localhost:3000';
-const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+import { ref, onUnmounted } from 'vue';
+import { io, Socket } from 'socket.io-client';
+import { v4 as uuidv4 } from 'uuid';
+import type { Message, User } from '../types';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 export const useWebSocket = (roomId: string) => {
-	const ws = ref<WebSocket | null>(null);
+	const socket = ref<Socket | null>(null);
 	const isConnected = ref(false);
-	const messages = ref<string[]>([]);
-	const userId = ref<string>(crypto.randomUUID());
-	const reconnectAttempts = ref(0);
-	const MAX_RECONNECT_ATTEMPTS = 5;
+	const messages = ref<Message[]>([]);
+	const userId = ref<string>(uuidv4());
+	const error = ref<string | null>(null);
+	const connectedUsers = ref<Set<string>>(new Set());
 
 	const connect = () => {
-		if (reconnectAttempts.value >= MAX_RECONNECT_ATTEMPTS) {
-			console.error('Max reconnection attempts reached');
-			return;
-		}
+		if (socket.value?.connected) return;
 
-		const wsUrl = `${WS_PROTOCOL}//${BACKEND_URL}/${roomId}`;
-		console.log('Connecting to WebSocket:', wsUrl);
+		console.log('Connecting to WebSocket server with userId:', userId.value);
+		socket.value = io(BACKEND_URL, {
+			query: {
+				roomId,
+				userId: userId.value,
+			},
+			transports: ['websocket'],
+		});
 
-		ws.value = new WebSocket(wsUrl);
-
-		ws.value.onopen = () => {
-			console.log('WebSocket connected');
+		socket.value.on('connect', () => {
+			console.log('Connected to server with userId:', userId.value);
 			isConnected.value = true;
-			reconnectAttempts.value = 0;
+			error.value = null;
+			connectedUsers.value.add(userId.value);
+		});
 
-			// Send join message after connection is established
-			setTimeout(() => {
-				sendMessage({
-					type: 'user_joined',
-					userId: userId.value,
-					timestamp: Date.now(),
-				});
-			}, 100);
-		};
-
-		ws.value.onclose = () => {
-			console.log('WebSocket disconnected');
+		socket.value.on('disconnect', () => {
 			isConnected.value = false;
+			connectedUsers.value.clear();
+		});
 
-			// Send user_left message before attempting to reconnect
-			if (ws.value) {
-				sendMessage({
-					type: 'user_left',
-					userId: userId.value,
-					timestamp: Date.now(),
-				});
+		socket.value.on('connect_error', (err) => {
+			console.error('Connection error:', err);
+			error.value = `Connection error: ${err.message}`;
+		});
+
+		socket.value.on('id', (id: string) => {
+			console.log('Received ID:', id);
+			userId.value = id;
+			connectedUsers.value.add(id);
+		});
+
+		socket.value.on('message', (message: Message) => {
+			messages.value.push(message);
+
+			// Keep only last 10 messages
+			if (messages.value.length > 10) {
+				messages.value = messages.value.slice(-10);
 			}
+		});
 
-			reconnectAttempts.value++;
-			// Exponential backoff for reconnection
-			const delay = Math.min(
-				1000 * Math.pow(2, reconnectAttempts.value),
-				10000
-			);
-			setTimeout(connect, delay);
-		};
+		socket.value.on('clients', (clients: User[]) => {
+			// Update connected users
+			const newUsers = new Set<string>();
+			clients.forEach((client) => {
+				newUsers.add(client.id);
+			});
+			connectedUsers.value = newUsers;
+		});
 
-		ws.value.onerror = (error) => {
-			console.error('WebSocket error:', error);
-		};
-
-		ws.value.onmessage = (event) => {
-			try {
-				const data = JSON.parse(event.data) as WebSocketMessage;
-
-				// Handle ping messages
-				if (data.type === 'ping') {
-					sendMessage({
-						type: 'pong',
-						userId: userId.value,
-						timestamp: Date.now(),
-					});
-					return;
-				}
-
-				// Don't store ping/pong messages in the messages array
-				if (data.type !== 'ping' && data.type !== 'pong') {
-					messages.value.push(event.data);
-				}
-
-				console.log('Received message:', data.type, 'from user:', data.userId);
-			} catch (error) {
-				console.error('Error parsing WebSocket message:', error);
-			}
-		};
-	};
-
-	const sendMessage = (data: WebSocketMessage) => {
-		if (ws.value?.readyState === WebSocket.OPEN) {
-			ws.value.send(JSON.stringify(data));
-		} else {
-			console.warn('WebSocket is not connected. Message not sent:', data);
-		}
+		socket.value.on('error', (err: { message: string }) => {
+			console.error('Socket error:', err);
+			error.value = err.message;
+		});
 	};
 
 	const disconnect = () => {
-		if (ws.value) {
-			// Send user_left message before closing
-			sendMessage({
-				type: 'user_left',
-				userId: userId.value,
-				timestamp: Date.now(),
-			});
-
-			// Close the connection
-			ws.value.close();
-			ws.value = null;
-			isConnected.value = false;
-		}
+		if (!socket.value) return;
+		console.log('Disconnecting from server...');
+		socket.value.disconnect();
+		socket.value = null;
+		isConnected.value = false;
+		messages.value = [];
+		error.value = null;
+		connectedUsers.value.clear();
 	};
 
-	// Set up connection on mount
-	onMounted(() => {
-		connect();
-	});
+	const sendMessage = (message: Message) => {
+		if (!socket.value?.connected) {
+			console.warn('Cannot send message: not connected');
+			return;
+		}
 
-	// Clean up on unmount
+		console.log('Sending message:', {
+			...message,
+			userId: userId.value,
+		});
+
+		socket.value.emit('update', {
+			...message,
+			userId: userId.value,
+			particles: message.particles,
+			color: message.color,
+		});
+	};
+
+	// Cleanup on component unmount
 	onUnmounted(() => {
 		disconnect();
 	});
@@ -141,7 +110,10 @@ export const useWebSocket = (roomId: string) => {
 		isConnected,
 		messages,
 		userId,
-		sendMessage,
+		error,
+		connectedUsers,
+		connect,
 		disconnect,
+		sendMessage,
 	};
 };
