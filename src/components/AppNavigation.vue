@@ -1,7 +1,7 @@
 <template>
 	<nav class="app-navigation">
 		<router-link to="/" class="nav-link">Home</router-link>
-		<router-link to="/particles" class="nav-link">Particles</router-link>
+		<router-link to="/sinapsis" class="nav-link">Sinapsis</router-link>
 		<router-link to="/fluid" class="nav-link">Fluid</router-link>
 		<router-link to="/waveform" class="nav-link">Waveform</router-link>
 		<router-link to="/collaborative" class="nav-link"

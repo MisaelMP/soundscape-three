@@ -23,23 +23,24 @@
 
 	const artworks = ref([
 		{
-			title: 'Particle Symphony',
+			title: 'Sinapsis',
 			description: 'Interactive particle system that dances to your voice',
-			path: '/particles',
+			path: '/sinapsis',
 		},
 		{
-			title: 'Fluid Dreams',
+			title: 'Fluid',
 			description: 'Fluid simulation that responds to motion and sound',
 			path: '/fluid',
 		},
 		{
-			title: 'Waveform Journey',
+			title: 'Waveform',
 			description: 'Visualize your sound through dynamic waveforms',
 			path: '/waveform',
 		},
 		{
-			title: 'Collaborative Canvas',
-			description: 'Create art together with friends in real-time',
+			title: 'Shared',
+			description:
+				'A shared space that detects other users in real-time using web sockets, every user will be assigned a colour and cloud shapes will be generated based on the users in the room',
 			path: '/collaborative',
 		},
 	]);
