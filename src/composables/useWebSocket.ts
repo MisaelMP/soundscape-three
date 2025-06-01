@@ -21,7 +21,11 @@ export const useWebSocket = (roomId: string) => {
 				roomId,
 				userId: userId.value,
 			},
-			transports: ['websocket'],
+			transports: ['websocket', 'polling'],
+			withCredentials: true,
+			reconnection: true,
+			reconnectionAttempts: 5,
+			reconnectionDelay: 1000,
 		});
 
 		socket.value.on('connect', () => {
