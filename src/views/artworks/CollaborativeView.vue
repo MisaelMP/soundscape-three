@@ -306,7 +306,7 @@
 				type: 'update',
 				userId: targetUserId,
 				particles,
-				color,
+				color: typeof color === 'number' ? color : color.getHex(),
 				timestamp: Date.now(),
 			});
 		}

@@ -10,7 +10,7 @@ const routes: RouteRecordRaw[] = [
 	{
 		path: '/particles',
 		name: 'particles',
-		component: () => import('../views/artworks/ParticleView.vue'),
+		component: () => import('../views/artworks/SinapsisView.vue'),
 	},
 	{
 		path: '/fluid',
