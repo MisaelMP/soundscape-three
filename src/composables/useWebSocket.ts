@@ -2,7 +2,11 @@ import { ref, onUnmounted } from 'vue';
 import { io, Socket } from 'socket.io-client';
 import { v4 as uuidv4 } from 'uuid';
 import type { Message, User } from '../types';
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
+// Ensure the backend URL doesn't have trailing slashes
+const BACKEND_URL = (
+	import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'
+).replace(/\/$/, '');
 
 export const useWebSocket = (roomId: string) => {
 	const socket = ref<Socket | null>(null);
@@ -15,7 +19,12 @@ export const useWebSocket = (roomId: string) => {
 	const connect = () => {
 		if (socket.value?.connected) return;
 
-		console.log('Connecting to WebSocket server with userId:', userId.value);
+		console.log(
+			'Connecting to WebSocket server:',
+			BACKEND_URL,
+			'with userId:',
+			userId.value
+		);
 		socket.value = io(BACKEND_URL, {
 			query: {
 				roomId,
@@ -26,6 +35,10 @@ export const useWebSocket = (roomId: string) => {
 			reconnection: true,
 			reconnectionAttempts: 5,
 			reconnectionDelay: 1000,
+			path: '/socket.io/',
+			timeout: 60000,
+			forceNew: true,
+			autoConnect: true,
 		});
 
 		socket.value.on('connect', () => {
@@ -43,6 +56,11 @@ export const useWebSocket = (roomId: string) => {
 		socket.value.on('connect_error', (err) => {
 			console.error('Connection error:', err);
 			error.value = `Connection error: ${err.message}`;
+			// Try to reconnect with polling if websocket fails
+			if (socket.value?.io.opts.transports?.[0] === 'websocket') {
+				console.log('Attempting to reconnect with polling...');
+				socket.value.io.opts.transports = ['polling', 'websocket'];
+			}
 		});
 
 		socket.value.on('id', (id: string) => {
