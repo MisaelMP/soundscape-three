@@ -5,12 +5,12 @@
 		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./src/*"]
-		}
+		},
+		"composite": true
 	},
 	"references": [
 		{
-			"path": "./tsconfig.node.json",
-			"composite": true
+			"path": "./tsconfig.node.json"
 		}
 	]
 }
