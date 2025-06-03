@@ -42,7 +42,7 @@
 			title: 'Clouds',
 			description:
 				'A shared space that detects other users in real-time using web sockets, every user will be assigned a colour and cloud shapes will be generated based on the users in the room',
-			path: '/collaborative',
+			path: '/clouds',
 		},
 	]);
 </script>
