@@ -24,9 +24,9 @@
 								lowFrequency: { value: 0 },
 								midFrequency: { value: 0 },
 								highFrequency: { value: 0 },
-								frequency: { value: 2.0 },
-								amplitude: { value: 0.5 },
-								offsetGain: { value: 0.1 },
+								frequency: { value: 3.0 },
+								amplitude: { value: 0.8 },
+								offsetGain: { value: 0.2 },
 								startColor: { value: new Color(0x4a90e2) },
 								endColor: { value: new Color(0xff6b6b) },
 							},
@@ -250,8 +250,8 @@
 			audioContext = new AudioContext();
 			const source = audioContext.createMediaStreamSource(stream);
 			analyser = audioContext.createAnalyser();
-			analyser.fftSize = 256;
-			analyser.smoothingTimeConstant = 0.8;
+			analyser.fftSize = 512;
+			analyser.smoothingTimeConstant = 0.6;
 			source.connect(analyser);
 			console.log('Audio setup successful');
 		} catch (error) {
@@ -265,24 +265,27 @@
 		const dataArray = new Uint8Array(analyser.frequencyBinCount);
 		analyser.getByteFrequencyData(dataArray);
 
-		// Split frequency bands
+		// Adjusted frequency bands for better sensitivity
 		const lowStart = 0;
-		const lowEnd = Math.floor(dataArray.length * 0.25);
+		const lowEnd = Math.floor(dataArray.length * 0.2);
 		const midStart = lowEnd;
-		const midEnd = Math.floor(dataArray.length * 0.75);
+		const midEnd = Math.floor(dataArray.length * 0.6);
 		const highStart = midEnd;
 		const highEnd = dataArray.length;
 
-		// Calculate averages for each band
+		// Calculate averages with increased sensitivity
 		const lowAvg =
-			dataArray.slice(lowStart, lowEnd).reduce((a, b) => a + b) /
-			(lowEnd - lowStart);
+			(dataArray.slice(lowStart, lowEnd).reduce((a, b) => a + b) /
+				(lowEnd - lowStart)) *
+			1.5;
 		const midAvg =
-			dataArray.slice(midStart, midEnd).reduce((a, b) => a + b) /
-			(midEnd - midStart);
+			(dataArray.slice(midStart, midEnd).reduce((a, b) => a + b) /
+				(midEnd - midStart)) *
+			1.5;
 		const highAvg =
-			dataArray.slice(highStart, highEnd).reduce((a, b) => a + b) /
-			(highEnd - highStart);
+			(dataArray.slice(highStart, highEnd).reduce((a, b) => a + b) /
+				(highEnd - highStart)) *
+			1.5;
 
 		return {
 			low: lowAvg / 128.0,
@@ -301,11 +304,11 @@
 			shaderMaterial.value.uniforms.midFrequency.value = freqData.mid;
 			shaderMaterial.value.uniforms.highFrequency.value = freqData.high;
 
-			// Update amplitude based on high frequencies
-			shaderMaterial.value.uniforms.amplitude.value = 0.5 + freqData.high * 0.5;
+			// Increased amplitude range based on high frequencies
+			shaderMaterial.value.uniforms.amplitude.value = 0.8 + freqData.high * 0.8;
 
-			// Update offset gain based on mid frequencies
-			shaderMaterial.value.uniforms.offsetGain.value = 0.1 + freqData.mid * 0.2;
+			// Increased offset gain based on mid frequencies
+			shaderMaterial.value.uniforms.offsetGain.value = 0.2 + freqData.mid * 0.4;
 		}
 
 		animationFrameId = requestAnimationFrame(animate);

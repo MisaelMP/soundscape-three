@@ -1,6 +1,6 @@
 <template>
 	<div class="home">
-		<nav class="artwork-nav">
+		<section class="artwork-grid">
 			<router-link
 				v-for="artwork in artworks"
 				:key="artwork.path"
@@ -14,7 +14,7 @@
 				<h2>{{ artwork.title }}</h2>
 				<p>{{ artwork.description }}</p>
 			</router-link>
-		</nav>
+		</section>
 	</div>
 </template>
 
@@ -24,12 +24,13 @@
 	const artworks = ref([
 		{
 			title: 'Sinapsis',
-			description: 'Interactive particle system that dances to your voice',
+			description:
+				'Interactive particle system that poetically mimics the neural network',
 			path: '/sinapsis',
 		},
 		{
 			title: 'Fluid',
-			description: 'Fluid simulation that responds to motion and sound',
+			description: 'Fluid simulation amorphous shape that responds to sound',
 			path: '/fluid',
 		},
 		{
@@ -38,7 +39,7 @@
 			path: '/waveform',
 		},
 		{
-			title: 'Shared',
+			title: 'Clouds',
 			description:
 				'A shared space that detects other users in real-time using web sockets, every user will be assigned a colour and cloud shapes will be generated based on the users in the room',
 			path: '/collaborative',
@@ -52,14 +53,17 @@
 		padding: 2rem;
 		background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
 		color: white;
+		overflow-y: auto;
+		box-sizing: border-box;
 	}
 
-	.artwork-nav {
+	.artwork-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 		gap: 2rem;
 		max-width: 1200px;
 		margin: 0 auto;
+		padding-bottom: 2rem;
 	}
 
 	.artwork-link {
@@ -88,5 +92,19 @@
 		opacity: 0.8;
 		font-size: 1rem;
 		line-height: 1.5;
+	}
+
+	@media (max-width: 768px) {
+		.home {
+			padding: 5rem 1rem 1rem;
+		}
+
+		.artwork-grid {
+			gap: 1rem;
+		}
+
+		.artwork-link {
+			padding: 1.5rem;
+		}
 	}
 </style>

@@ -1,7 +1,6 @@
 <template>
 	<BaseCanvas>
 		<TresGroup>
-			<!-- Glass sphere with waves -->
 			<TresMesh
 				:position="[0, -0.5, 0]"
 				:scale="1.2"

@@ -11,7 +11,7 @@
 			:enable-pan="false"
 			:enable-rotate="false"
 		/>
-		<SmokeCloud
+		<Cloud
 			v-for="(particles, uid) in smokeParticles"
 			:key="uid"
 			:user-id="uid"
@@ -29,7 +29,7 @@
 	import * as THREE from 'three';
 	import BaseCanvas from '@/components/BaseCanvas.vue';
 	import { OrbitControls } from '@tresjs/cientos';
-	import SmokeCloud from '@/components/SmokeCloud.vue';
+	import Cloud from '@/components/Cloud.vue';
 	import type { Particle } from '@/types';
 
 	// Initialize all reactive state and constants first
@@ -38,10 +38,7 @@
 	const activeUsers = ref<Set<string>>(new Set());
 	const baseRadius = 200;
 	const clock = new THREE.Clock();
-	let lastUpdateTime = 0;
-	const UPDATE_INTERVAL = 1000 / 30;
 	let animationFrameId: number | null = null;
-	const initializedUsers = ref<Set<string>>(new Set());
 
 	// Setup WebSocket connection
 	const {
@@ -57,7 +54,6 @@
 
 	// Register lifecycle hooks first
 	onMounted(() => {
-		console.log('Component mounted, starting animation');
 		clock.start();
 		animate();
 		// Connect first, smoke will be initialized after connection
@@ -65,7 +61,6 @@
 	});
 
 	onUnmounted(() => {
-		console.log('Component unmounting, cleaning up');
 		if (animationFrameId) {
 			cancelAnimationFrame(animationFrameId);
 			animationFrameId = null;
@@ -79,12 +74,9 @@
 
 	// Watch for connected users changes
 	watch(connectedUsers, (newUsers) => {
-		console.log('Connected users:', Array.from(newUsers));
-
 		// Initialize smoke for each user if not already initialized
 		newUsers.forEach((uid) => {
 			if (!smokeParticles.value[uid]) {
-				console.log('Initializing smoke for user:', uid);
 				const particles = createParticles(uid);
 				const color = assignColor(uid);
 				smokeParticles.value[uid] = particles;
@@ -110,7 +102,6 @@
 
 		switch (latestMessage.type) {
 			case 'user_joined':
-				console.log('User joined:', latestMessage.userId);
 				if (latestMessage.userId !== userId.value) {
 					connectedUsers.value.add(latestMessage.userId);
 				}
@@ -131,7 +122,6 @@
 				break;
 
 			case 'user_left':
-				console.log('User left:', latestMessage.userId);
 				if (latestMessage.userId) {
 					delete smokeParticles.value[latestMessage.userId];
 					delete userColors.value[latestMessage.userId];
@@ -144,7 +134,6 @@
 	// Initialize when connected
 	watch(isConnected, (connected) => {
 		if (connected && userId.value) {
-			console.log('Connected with userId:', userId.value);
 			const particles = createParticles(userId.value);
 			const color = assignColor(userId.value);
 			smokeParticles.value[userId.value] = particles;
@@ -284,11 +273,9 @@
 
 	const initSmoke = (targetUserId: string) => {
 		if (!isConnected.value) {
-			console.warn('Cannot initialize smoke: not connected');
 			return;
 		}
 
-		console.log('Initializing smoke for user:', targetUserId);
 		const color = userColors.value[targetUserId] || 0xffffff;
 		const particles = createParticles(targetUserId);
 		assignColor(targetUserId);
@@ -301,7 +288,6 @@
 
 		// If this is our own smoke, send initial state
 		if (targetUserId === userId.value) {
-			console.log('Sending initial state');
 			sendMessage({
 				type: 'update',
 				userId: targetUserId,

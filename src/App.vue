@@ -1,6 +1,6 @@
 <script setup lang="ts">
 	import { RouterView } from 'vue-router';
-	import AppNavigation from '@/components/AppNavigation.vue';
+	import AppNavigation from '@/components/Navigation.vue';
 </script>
 
 <template>

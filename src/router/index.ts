@@ -23,9 +23,9 @@ const routes: RouteRecordRaw[] = [
 		component: () => import('../views/artworks/WaveformView.vue'),
 	},
 	{
-		path: '/collaborative',
-		name: 'collaborative',
-		component: () => import('../views/artworks/CollaborativeView.vue'),
+		path: '/clouds',
+		name: 'clouds',
+		component: () => import('../views/artworks/CloudsView.vue'),
 	},
 ];
 
